@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "Laundry order booking for carpets, rugs, furniture, and specialty sanitation services.",
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "Sequential tracking ID such as 1, 2, 14",
+          "maxLength": 32
+        },
+        "orderNumber": {
+          "type": "number",
+          "description": "Integer order number"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Full name of customer",
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number",
+          "maxLength": 25
+        },
+        "deliveryType": {
+          "type": "string",
+          "description": "pickup (Home Pickup & Delivery) or dropoff (Self Drop-off at Shop)",
+          "enum": ["pickup", "dropoff"]
+        },
+        "address": {
+          "type": "string",
+          "description": "Customer address or branch note",
+          "maxLength": 300
+        },
+        "deliveryDate": {
+          "type": "string",
+          "description": "Selected date",
+          "maxLength": 50
+        },
+        "timeSlot": {
+          "type": "string",
+          "description": "Preferred time slot",
+          "maxLength": 50
+        },
+        "items": {
+          "type": "object",
+          "description": "Item breakdown and quantities"
+        },
+        "deliveryFee": {
+          "type": "number",
+          "description": "Delivery fee in EGP"
+        },
+        "totalPrice": {
+          "type": "number",
+          "description": "Calculated total price in EGP"
+        },
+        "status": {
+          "type": "string",
+          "description": "Order progression status",
+          "enum": ["received", "washing", "ready", "delivered", "cancelled"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Special notes",
+          "maxLength": 500
+        },
+        "source": {
+          "type": "string",
+          "description": "Order origin, e.g. web or manual",
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["orderId", "customerName", "phone", "totalPrice", "status"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Dynamic service or product offered by the laundry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "subname": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 300 },
+        "unit": { "type": "string", "maxLength": 50 },
+        "price": { "type": "number" },
+        "icon": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "price", "unit"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global operational settings, WhatsApp number, and delivery fee.",
+      "type": "object",
+      "properties": {
+        "businessPhone": { "type": "string", "maxLength": 30 },
+        "adminPasscode": { "type": "string", "maxLength": 64 },
+        "deliveryFee": { "type": "number" },
+        "shopBranchAddress": { "type": "string", "maxLength": 200 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["businessPhone"]
+    }
+  },
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": {
+        "$ref": "#/entities/Booking"
+      },
+      "description": "Collection of all carpet and rug laundry bookings."
+    },
+    "/services/{serviceId}": {
+      "schema": {
+        "$ref": "#/entities/Service"
+      },
+      "description": "Dynamic laundry products and services."
+    },
+    "/settings/{settingId}": {
+      "schema": {
+        "$ref": "#/entities/Settings"
+      },
+      "description": "System settings such as fees and contact info."
+    }
+  }
+}

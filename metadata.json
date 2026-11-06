@@ -1,0 +1,6 @@
+{
+  "name": "CleanPro Express - مغسلة كلين برو إكسبريس للسجاد والمفروشات الفاخرة",
+  "description": "منصة حجز وإدارة مغسلة السجاد والمفروشات الفاخرة CleanPro Express - خدمة غسيل وتعقيم احترافية وتتبع حي للطلبات ولوحة تحكم متكاملة",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

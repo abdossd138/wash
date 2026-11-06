@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety catch-all: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['orderId', 'customerName', 'phone', 'totalPrice', 'status'])
+        && data.orderId is string && data.orderId.size() <= 32
+        && data.customerName is string && data.customerName.size() <= 100
+        && data.phone is string && data.phone.size() <= 35
+        && data.totalPrice is number && data.totalPrice >= 0
+        && data.status in ['received', 'washing', 'ready', 'delivered', 'cancelled'];
+    }
+
+    match /bookings/{bookingId} {
+      allow get: if isValidId(bookingId);
+      allow list: if true;
+      allow create: if isValidId(bookingId) && isValidBooking(incoming());
+      allow update: if isValidId(bookingId) && isValidBooking(incoming());
+      allow delete: if isValidId(bookingId);
+    }
+
+    match /services/{serviceId} {
+      allow get: if isValidId(serviceId);
+      allow list: if true;
+      allow write: if isValidId(serviceId);
+    }
+
+    match /settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow write: if isValidId(settingId);
+    }
+
+    match /test/{docId} {
+      allow read: if true;
+    }
+  }
+}

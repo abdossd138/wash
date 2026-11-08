@@ -10,8 +10,11 @@ import {
   MapPin,
   Clock,
   ArrowLeft,
+  Image as ImageIcon,
+  Car,
 } from 'lucide-react';
 import { AppSettings } from '../types';
+import { normalizeWhatsAppPhone } from '../services/bookingService';
 
 interface SideDrawerProps {
   isOpen: boolean;
@@ -21,6 +24,7 @@ interface SideDrawerProps {
   isAdminLoggedIn: boolean;
   onOpenAdminDashboard: () => void;
   settings: AppSettings;
+  hasMedia?: boolean;
 }
 
 export const SideDrawer: React.FC<SideDrawerProps> = ({
@@ -31,6 +35,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   isAdminLoggedIn,
   onOpenAdminDashboard,
   settings,
+  hasMedia = false,
 }) => {
   if (!isOpen) return null;
 
@@ -87,12 +92,31 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
                 </div>
                 <div>
                   <span className="text-sm font-bold text-white block group-hover:text-cyan-300 transition-colors">
-                    حجز جديد (حاسبة الأسعار)
+                    غسيل سجاد ومفروشات
                   </span>
-                  <span className="text-[11px] text-slate-400">الخطوة 1: اختيار المفروشات</span>
+                  <span className="text-[11px] text-slate-400">حاسبة تكلفة السجاد والكنب</span>
                 </div>
               </div>
               <ArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
+            </button>
+
+            {/* Car Wash & Detailing */}
+            <button
+              onClick={() => handleAction(() => onNavigate('cars'))}
+              className="w-full p-3.5 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-right flex items-center justify-between group transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold">
+                  <Car className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-sm font-bold text-white block group-hover:text-purple-300 transition-colors">
+                    غسيل وخدمات سيارات
+                  </span>
+                  <span className="text-[11px] text-slate-400">اختار نوع وموديل عربيتك والخدمات</span>
+                </div>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-purple-400 group-hover:-translate-x-1 transition-transform" />
             </button>
 
             {/* Track Order */}
@@ -132,6 +156,27 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
               </div>
               <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:-translate-x-1 transition-transform" />
             </button>
+
+            {/* Photos & Videos Section */}
+            {hasMedia && (
+              <button
+                onClick={() => handleAction(() => onNavigate('media'))}
+                className="w-full p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/30 text-right flex items-center justify-between group transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
+                    <ImageIcon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-white block group-hover:text-cyan-300 transition-colors">
+                      صور وفيديوهات عن المكان
+                    </span>
+                    <span className="text-[11px] text-slate-400">إعلانات وصور حصرية للمغسلة</span>
+                  </div>
+                </div>
+                <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:-translate-x-1 transition-transform" />
+              </button>
+            )}
 
             {/* Admin Portal */}
             <div className="pt-2">
@@ -179,7 +224,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           </div>
 
           <a
-            href={`https://wa.me/${settings.businessPhone.replace(/\D/g, '')}?text=${encodeURIComponent('مرحباً CleanPro Express، أود الاستفسار عن خدمة غسيل السجاد والمفروشات')}`}
+            href={`https://wa.me/${normalizeWhatsAppPhone(settings.businessPhone)}?text=${encodeURIComponent('مرحباً CleanPro Express، أود الاستفسار عن خدمة غسيل السجاد والمفروشات')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"

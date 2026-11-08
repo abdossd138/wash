@@ -13,11 +13,13 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Booking, DynamicService, OrderStatus, AppSettings, DeliveryType } from '../types';
-import { DEFAULT_SETTINGS, DEFAULT_SERVICES } from '../constants';
+import { Booking, DynamicService, OrderStatus, AppSettings, DeliveryType, SiteFeature, PromoMediaItem } from '../types';
+import { DEFAULT_SETTINGS, DEFAULT_SERVICES, DEFAULT_FEATURES } from '../constants';
 
 const BOOKINGS_COLLECTION = 'bookings';
 const SERVICES_COLLECTION = 'services';
+const FEATURES_COLLECTION = 'features';
+const MEDIA_COLLECTION = 'promo_media';
 const SETTINGS_COLLECTION = 'settings';
 const CONFIG_DOC_ID = 'config';
 const COUNTER_DOC_ID = 'counters';
@@ -132,15 +134,17 @@ export async function deleteServiceFromFirestore(serviceId: string): Promise<voi
   }
 }
 
-// Seed default services if collection is empty
+// Seed default services if collection is empty or missing car services
 export async function seedDefaultServicesIfEmpty(): Promise<void> {
   try {
     const servicesRef = collection(db, SERVICES_COLLECTION);
     const snap = await getDocs(servicesRef);
-    if (!snap.empty) return;
+    const existingIds = new Set(snap.docs.map((d) => d.id));
 
     for (const service of DEFAULT_SERVICES) {
-      await setDoc(doc(db, SERVICES_COLLECTION, service.id), service);
+      if (!existingIds.has(service.id)) {
+        await setDoc(doc(db, SERVICES_COLLECTION, service.id), service);
+      }
     }
   } catch (e) {
     console.warn('Default services seeding skipped or failed:', e);
@@ -214,6 +218,14 @@ export async function getNextSequentialOrderId(): Promise<number> {
 
 // Create a new booking in Firestore with delivery options and sequential ID
 export async function createBookingInFirestore(data: {
+  orderId?: string;
+  orderNumber?: number;
+  serviceCategory?: 'carpets' | 'cars';
+  carDetails?: {
+    brand: string;
+    model: string;
+    selectedServicesList?: string[];
+  };
   customerName: string;
   phone: string;
   deliveryType: DeliveryType;
@@ -231,17 +243,19 @@ export async function createBookingInFirestore(data: {
   deliveryFee: number;
   totalPrice: number;
   notes?: string;
-  source?: 'website' | 'manual' | 'phone';
+  source?: 'website' | 'manual' | 'phone' | 'mobile-car' | 'mobile-carpet';
 }): Promise<Booking> {
   const docId = generateDocId();
-  const nextNum = await getNextSequentialOrderId();
-  const orderId = String(nextNum);
+  const nextNum = data.orderNumber || (await getNextSequentialOrderId());
+  const orderId = data.orderId || String(nextNum);
   const now = new Date().toISOString();
 
   const newBooking: Booking = {
     id: docId,
     orderId, // Simple numeric string e.g. "1", "2", "14"
     orderNumber: nextNum,
+    serviceCategory: data.serviceCategory || 'carpets',
+    carDetails: data.carDetails,
     customerName: data.customerName.trim(),
     phone: data.phone.trim(),
     deliveryType: data.deliveryType,
@@ -491,19 +505,25 @@ export function subscribeToAppSettings(
   );
 }
 
-export async function saveAppSettings(settings: AppSettings): Promise<void> {
+export async function saveAppSettings(settings: Partial<AppSettings>): Promise<void> {
   try {
-    localStorage.setItem('cleanpro_settings', JSON.stringify(settings));
+    const existing = localStorage.getItem('cleanpro_settings');
+    const merged = existing ? { ...JSON.parse(existing), ...settings } : { ...DEFAULT_SETTINGS, ...settings };
+    localStorage.setItem('cleanpro_settings', JSON.stringify(merged));
   } catch (e) {}
 
   const path = `${SETTINGS_COLLECTION}/${CONFIG_DOC_ID}`;
   try {
     const docRef = doc(db, SETTINGS_COLLECTION, CONFIG_DOC_ID);
-    await setDoc(docRef, {
-      ...settings,
-      adminPasscode: '2255',
-      updatedAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        ...settings,
+        adminPasscode: '2255',
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -595,8 +615,60 @@ export function exportBookingsToCSV(bookings: Booking[], brandName = 'CleanPro')
 export function buildWhatsAppMessage(
   booking: Booking,
   businessPhone: string,
-  servicesList: DynamicService[]
+  servicesList: DynamicService[],
+  brandName?: string
 ): string {
+  const storeName = brandName?.trim() || 'CleanPro Express';
+  const isCarBooking = booking.serviceCategory === 'cars' || Boolean(booking.carDetails);
+
+  if (isCarBooking) {
+    const deliveryTypeLabel =
+      booking.deliveryType === 'pickup'
+        ? '🚚 مغسلة دليفري متنقلة أمام البيت / الجراج'
+        : '🏢 تسليم وغسيل في مقر المغسلة';
+
+    const itemsText = (booking.itemsDetails && booking.itemsDetails.length > 0)
+      ? booking.itemsDetails
+          .map((item) => `▫️ ${item.name}: ${item.count} (${item.subtotal} ج.م)`)
+          .join('\n')
+      : servicesList
+          .map((srv) => {
+            const count = booking.items[srv.id] || 0;
+            if (count > 0) {
+              return `▫️ ${srv.name}: ${count} ${srv.unit} (${srv.price * count} ج.م)`;
+            }
+            return null;
+          })
+          .filter(Boolean)
+          .join('\n');
+
+    const carMakeStr = booking.carDetails?.brand || 'سيارة خاصة';
+    const carModelStr = booking.carDetails?.model || 'غير محدد';
+
+    const message = `🚗✨ *طلب حجز غسيل وصيانة سيارات - ${storeName}* ✨🚗
+━━━━━━━━━━━━━━━━━━
+🔖 *رقم الطلب*: *#${booking.orderId}*
+🚘 *ماركة السيارة*: ${carMakeStr}
+🏎️ *موديل / نسخة السيارة*: ${carModelStr}
+👤 *اسم العميل*: ${booking.customerName}
+📞 *رقم هاتف العميل (المشتري)*: ${booking.phone}
+📍 *طريقة ومكان الخدمة*: ${deliveryTypeLabel}
+${booking.deliveryType === 'pickup' ? `📍 *عنوان العميل*: ${booking.address}` : '📍 *الموقع*: استلام بمقر المغسلة'}
+📅 *تاريخ الحجز*: ${booking.deliveryDate}
+⏰ *الفترة الزمنية*: ${booking.timeSlot}
+
+🛠️ *الخدمات المطلوبة للسيارة*:
+${itemsText || 'لم يتم تحديد خدمات'}
+
+${booking.deliveryFee > 0 ? `🚚 رسوم الخدمة المتنقلة: ${booking.deliveryFee} جنيه مصري\n` : ''}💰 *الإجمالي المستحق*: *${booking.totalPrice} جنيه مصري*
+${booking.notes ? `📝 *ملاحظات خاصة*: ${booking.notes}\n` : ''}
+━━━━━━━━━━━━━━━━━━
+رقم طلبكم للتتبع السريع هو *#${booking.orderId}*`;
+
+    return message;
+  }
+
+  // STANDARD CARPETS & FURNITURE BOOKING
   const deliveryTypeLabel =
     booking.deliveryType === 'pickup'
       ? '🚚 استلام وتوصيل منزلي'
@@ -622,11 +694,11 @@ export function buildWhatsAppMessage(
       ? `🚚 رسوم الاستلام والتوصيل: ${booking.deliveryFee} جنيه`
       : '🏢 رسوم التوصيل: مجاناً (تسليم بالفرع)';
 
-  const message = `✨ *طلب حجز جديد - مغسلة CleanPro Express* ✨
+  const message = `✨ *طلب حجز غسيل سجاد ومفروشات - ${storeName}* ✨
 ━━━━━━━━━━━━━━━━━━
 🔖 *رقم الطلب*: *#${booking.orderId}*
 👤 *اسم العميل*: ${booking.customerName}
-📞 *رقم الهاتف*: ${booking.phone}
+📞 *رقم هاتف العميل (المشتري)*: ${booking.phone}
 📦 *طريقة الاستلام*: ${deliveryTypeLabel}
 ${booking.deliveryType === 'pickup' ? `📍 *عنوان الاستلام*: ${booking.address}` : `📍 *الموقع*: استلام بالفرع`}
 📅 *تاريخ الاستلام*: ${booking.deliveryDate}
@@ -644,25 +716,284 @@ ${booking.notes ? `📝 *ملاحظات*: ${booking.notes}\n` : ''}
   return message;
 }
 
+export function normalizeWhatsAppPhone(phone: string): string {
+  if (!phone) return '';
+  let digits = phone.replace(/\D/g, '');
+  // If local Egyptian mobile format (e.g. 010..., 011..., 012..., 015... - 11 digits starting with 01)
+  if (digits.startsWith('01') && digits.length === 11) {
+    digits = '2' + digits; // becomes 201xxxxxxxxx for international WhatsApp
+  } else if (digits.startsWith('1') && digits.length === 10) {
+    digits = '20' + digits;
+  }
+  return digits;
+}
+
 export function getWhatsAppUrl(phone: string, text: string): string {
-  const cleanPhone = phone.replace(/\D/g, '');
+  const cleanPhone = normalizeWhatsAppPhone(phone);
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
 }
 
 export function buildStatusWhatsAppUrl(
   booking: Booking,
   newStatusLabel: string,
-  businessPhone: string
+  businessPhone: string,
+  brandName?: string
 ): string {
+  const storeName = brandName?.trim() || 'CleanPro Express';
   const message = `مرحباً أستاذ/ة *${booking.customerName}* 👋
-تحديث لحالة طلبكم رقم *#${booking.orderId}* في مغسلة CleanPro Express:
+تحديث لحالة طلبكم رقم *#${booking.orderId}* في ${storeName}:
 
 الحالة الحالية: *${newStatusLabel}* 🚀
 طريقة الاستلام: ${booking.deliveryType === 'pickup' ? 'استلام وتوصيل للمنزل' : 'استلام بالفرع'}
 💰 الإجمالي: ${booking.totalPrice} ج.م
 
 يمكنكم دائماً تتبع حالة طلبكم عبر موقعنا بإدخال رقم الطلب (#${booking.orderId}) أو رقم الهاتف.
-شكراً لاختياركم كلين برو إكسبريس! ✨`;
+شكراً لاختياركم ${storeName}! ✨`;
 
   return getWhatsAppUrl(booking.phone, message);
 }
+
+/* =========================================================================
+   DYNAMIC SITE FEATURES & HIGHLIGHTS (FULL CRUD)
+   ========================================================================= */
+
+// Subscribe to site features in real time from Firestore
+export function subscribeToFeatures(
+  onSuccess: (features: SiteFeature[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const featuresRef = collection(db, FEATURES_COLLECTION);
+
+  // Cached fallback
+  try {
+    const cached = localStorage.getItem('cleanpro_features');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        onSuccess(parsed);
+      }
+    }
+  } catch (e) {}
+
+  return onSnapshot(
+    featuresRef,
+    (snapshot) => {
+      const features: SiteFeature[] = [];
+      snapshot.forEach((docSnap) => {
+        features.push({ ...docSnap.data(), id: docSnap.id } as SiteFeature);
+      });
+      if (features.length > 0) {
+        try {
+          localStorage.setItem('cleanpro_features', JSON.stringify(features));
+        } catch (e) {}
+        onSuccess(features);
+      } else {
+        // If empty, return default features
+        onSuccess(DEFAULT_FEATURES);
+      }
+    },
+    (error) => {
+      console.warn('Firestore features subscription warning, using defaults:', error);
+      try {
+        const cached = localStorage.getItem('cleanpro_features');
+        if (cached) {
+          onSuccess(JSON.parse(cached));
+          return;
+        }
+      } catch (e) {}
+      onSuccess(DEFAULT_FEATURES);
+      if (onError) onError(error);
+    }
+  );
+}
+
+// Add a new dynamic feature
+export async function createFeatureInFirestore(
+  featureData: Omit<SiteFeature, 'id'> & { id?: string }
+): Promise<SiteFeature> {
+  const featureId = featureData.id || `feat-${Date.now()}`;
+  const path = `${FEATURES_COLLECTION}/${featureId}`;
+
+  const newFeature: SiteFeature = {
+    id: featureId,
+    title: featureData.title.trim(),
+    description: featureData.description.trim(),
+    icon: featureData.icon || 'Sparkles',
+    color: featureData.color || 'cyan',
+    active: featureData.active !== undefined ? featureData.active : true,
+  };
+
+  try {
+    const docRef = doc(db, FEATURES_COLLECTION, featureId);
+    await setDoc(docRef, newFeature);
+    return newFeature;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+// Update existing feature
+export async function updateFeatureInFirestore(
+  featureId: string,
+  updates: Partial<Omit<SiteFeature, 'id'>>
+): Promise<void> {
+  const path = `${FEATURES_COLLECTION}/${featureId}`;
+  try {
+    const docRef = doc(db, FEATURES_COLLECTION, featureId);
+    await updateDoc(docRef, updates);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+// Delete feature
+export async function deleteFeatureInFirestore(featureId: string): Promise<void> {
+  const path = `${FEATURES_COLLECTION}/${featureId}`;
+  try {
+    const docRef = doc(db, FEATURES_COLLECTION, featureId);
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+// Seed default features if collection is empty
+export async function seedDefaultFeaturesIfEmpty(): Promise<void> {
+  try {
+    const snap = await getDocs(collection(db, FEATURES_COLLECTION));
+    if (snap.empty) {
+      for (const feat of DEFAULT_FEATURES) {
+        await setDoc(doc(db, FEATURES_COLLECTION, feat.id), feat);
+      }
+    }
+  } catch (e) {
+    console.warn('Seeding default features fallback:', e);
+  }
+}
+
+/* =========================================================================
+   PROMO MEDIA (IMAGES & VIDEOS) BANNER
+   ========================================================================= */
+
+// Subscribe to promo media (photos & videos)
+export function subscribeToPromoMedia(
+  onSuccess: (items: PromoMediaItem[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const mediaRef = collection(db, MEDIA_COLLECTION);
+
+  try {
+    const cached = localStorage.getItem('cleanpro_promo_media');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) {
+        onSuccess(parsed);
+      }
+    }
+  } catch (e) {}
+
+  return onSnapshot(
+    mediaRef,
+    (snapshot) => {
+      const items: PromoMediaItem[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push({ ...docSnap.data(), id: docSnap.id } as PromoMediaItem);
+      });
+      try {
+        localStorage.setItem('cleanpro_promo_media', JSON.stringify(items));
+      } catch (e) {}
+      onSuccess(items);
+    },
+    (error) => {
+      console.warn('Firestore promo media subscription warning:', error);
+      if (onError) onError(error);
+    }
+  );
+}
+
+// Add promo media (image or video)
+export async function createPromoMediaInFirestore(
+  mediaData: Omit<PromoMediaItem, 'id'> & { id?: string }
+): Promise<PromoMediaItem> {
+  const mediaId = mediaData.id || `media-${Date.now()}`;
+  const path = `${MEDIA_COLLECTION}/${mediaId}`;
+
+  const newItem: PromoMediaItem = {
+    id: mediaId,
+    type: mediaData.type,
+    url: mediaData.url.trim(),
+    title: mediaData.title?.trim() || '',
+    subtitle: mediaData.subtitle?.trim() || '',
+    linkUrl: mediaData.linkUrl?.trim() || '',
+    active: mediaData.active !== undefined ? mediaData.active : true,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const docRef = doc(db, MEDIA_COLLECTION, mediaId);
+    await setDoc(docRef, newItem);
+    return newItem;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+// Update promo media
+export async function updatePromoMediaInFirestore(
+  mediaId: string,
+  updates: Partial<Omit<PromoMediaItem, 'id'>>
+): Promise<void> {
+  const path = `${MEDIA_COLLECTION}/${mediaId}`;
+  try {
+    const docRef = doc(db, MEDIA_COLLECTION, mediaId);
+    await updateDoc(docRef, updates);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+// Delete promo media
+export async function deletePromoMediaFromFirestore(mediaId: string): Promise<void> {
+  const path = `${MEDIA_COLLECTION}/${mediaId}`;
+  try {
+    const docRef = doc(db, MEDIA_COLLECTION, mediaId);
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+/* =========================================================================
+   EMERGENCY STORE LOCK / KILL-SWITCH (STRICT PASSCODE: 1177)
+   ========================================================================= */
+
+export async function setStoreLockInFirestore(
+  locked: boolean,
+  passcode: string,
+  customMessage?: string
+): Promise<{ success: boolean; error?: string }> {
+  // STRICT EVALUATION: Passcode MUST be strictly string "1177"
+  if (passcode.trim() !== '1177') {
+    return {
+      success: false,
+      error: 'رمز الأمان السري غير صحيح. تم رفض العملية لأسباب أمنية.',
+    };
+  }
+
+  try {
+    const updates: Partial<AppSettings> = {
+      isStoreLocked: locked,
+      ...(customMessage !== undefined ? { storeLockMessage: customMessage.trim() } : {}),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveAppSettings(updates);
+    return { success: true };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'تعذر حفظ حالة القفل في قاعدة البيانات.',
+    };
+  }
+}
+

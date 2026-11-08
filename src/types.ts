@@ -1,11 +1,14 @@
+export type ServiceCategory = 'carpets' | 'cars';
+
 export interface DynamicService {
-  id: string; // e.g. "large-carpets", "runners", or custom generated id
+  id: string; // e.g. "large-carpets", "car-exterior-wash"
   name: string; // Arabic name
   subname?: string; // Subtitle / specs
   description?: string;
-  unit: string; // e.g. "قطعة", "متر مربع", "مقعد"
+  unit: string; // e.g. "قطعة", "سيارة", "خدمة"
   price: number; // in EGP
   icon?: string; // Lucide icon identifier
+  category?: ServiceCategory; // 'carpets' or 'cars'
 }
 
 export type OrderStatus = 'received' | 'washing' | 'ready' | 'delivered' | 'cancelled';
@@ -26,6 +29,12 @@ export interface Booking {
   id: string; // Firestore document ID
   orderId: string; // Simple sequential numeric string: "1", "2", "3", "14"
   orderNumber?: number; // Integer order number
+  serviceCategory?: ServiceCategory; // 'carpets' | 'cars'
+  carDetails?: {
+    brand: string; // e.g. بي إم دبليو، هيونداي
+    model: string; // e.g. M4 Competition، فيرنا
+    selectedServicesList?: string[]; // e.g. ["غسيل برة", "غسيل جوة", "تغيير زيت"]
+  };
   customerName: string;
   phone: string;
   deliveryType: DeliveryType; // 'pickup' (home) or 'dropoff' (shop)
@@ -44,10 +53,30 @@ export interface Booking {
   totalPrice: number; // in EGP
   status: OrderStatus;
   notes?: string;
-  source: 'website' | 'manual' | 'phone';
+  source: 'website' | 'manual' | 'phone' | 'mobile-car' | 'mobile-carpet';
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
   internalNotes?: string;
+}
+
+export interface SiteFeature {
+  id: string;
+  title: string;
+  description: string;
+  icon?: string; // 'Droplets' | 'Wind' | 'Flame' | 'Shield' | 'Sparkles' | 'Zap' | 'Clock' | 'HeartHandshake'
+  color?: string; // 'cyan' | 'purple' | 'rose' | 'emerald' | 'amber'
+  active?: boolean;
+}
+
+export interface PromoMediaItem {
+  id: string;
+  type: 'image' | 'video'; // 'image' or 'video'
+  url: string; // image URL or YouTube/mp4 URL
+  title?: string;
+  subtitle?: string;
+  linkUrl?: string;
+  active: boolean;
+  createdAt?: string;
 }
 
 export interface AppSettings {
@@ -59,6 +88,10 @@ export interface AppSettings {
   brandTagline: string;
   coverageText?: string;
   workHoursText?: string;
+  announcementText?: string;
+  announcementActive?: boolean;
+  isStoreLocked?: boolean; // When true, the public customer site is locked
+  storeLockMessage?: string; // Custom message displayed when locked
   updatedAt?: string;
 }
 

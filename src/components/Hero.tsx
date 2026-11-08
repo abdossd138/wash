@@ -1,16 +1,22 @@
 import React from 'react';
-import { Sparkles, ArrowLeft, Search, ShieldCheck, Flame, Clock, Award, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowLeft, Search, ShieldCheck, Flame, Clock, Award, CheckCircle2, Car } from 'lucide-react';
 import { AppSettings } from '../types';
 
 interface HeroProps {
   settings: AppSettings;
   onStartBooking: () => void;
+  onStartCarBooking?: () => void;
   onTrackOrder: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ settings, onStartBooking, onTrackOrder }) => {
+export const Hero: React.FC<HeroProps> = ({
+  settings,
+  onStartBooking,
+  onStartCarBooking,
+  onTrackOrder,
+}) => {
   return (
-    <section className="relative overflow-hidden pt-10 pb-16 lg:py-24 cyber-grid-bg">
+    <section className="relative overflow-hidden pt-8 pb-16 lg:py-20 cyber-grid-bg">
       {/* Background ambient light orbs */}
       <div className="absolute top-1/4 -right-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 -left-24 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -21,17 +27,21 @@ export const Hero: React.FC<HeroProps> = ({ settings, onStartBooking, onTrackOrd
           {/* Top Cyber Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-400/30 text-cyan-300 text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.15)]">
             <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span>العناية الملكية بالسجاد والمفروشات الفاخرة</span>
+            <span>مغسلة CleanPro المتطورة: سجاد ومفروشات فاخرة + سيارات متنقلة</span>
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span className="text-slate-300 font-normal">تقنية النانو بخار والأوزون</span>
+            <span className="text-slate-300 font-normal">تقنية النانو بخار 120°C</span>
           </div>
 
           {/* Minimalist Glowing Animated Center Logo */}
           <div className="flex flex-col items-center justify-center pt-2 pb-2">
             <button
-              onClick={onStartBooking}
+              onClick={() => {
+                const el = document.getElementById('service-selection-cards');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                else onStartBooking();
+              }}
               className="group relative cursor-pointer focus:outline-none transition-transform duration-500 hover:scale-105 active:scale-95"
-              title="اضغط على الشعار التفاعلي لبدء الحجز الفوري"
+              title="اضغط على الشعار لاختيار الخدمة (سجاد أو عربيات)"
             >
               {/* Outer pulsing radiant rings */}
               <div className="absolute -inset-6 rounded-full bg-gradient-to-r from-cyan-500/30 via-purple-500/25 to-teal-400/30 blur-2xl group-hover:blur-3xl animate-pulse transition-all duration-700" />
@@ -47,39 +57,82 @@ export const Hero: React.FC<HeroProps> = ({ settings, onStartBooking, onTrackOrd
             </button>
             <div className="text-xs text-slate-400 mt-4 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>اضغط على الشعار التفاعلي لبدء الحجز السريع</span>
+              <span>اضغط على الشعار لاختيار الخدمة: سجاد أو سيارات</span>
             </div>
           </div>
 
           {/* Main Headline */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight font-['Alexandria',sans-serif]">
-            غسيل وتعقيم السجاد والمفروشات
+            غسيل سجاد ومفروشات & سيارات
             <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-400">
-              بأعلى معايير النظافة الفندقية
+              بالبخار والتعقيم الفندقي المتطور
             </span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            نعتني بأدق تفاصيل السجاد العجمي، التركي، والحرير مع إزالة البقع المستعصية والتعقيم الحراري تحت 120°C. استلام وتوصيل منزلي مريح أو تسليم مباشر بالفرع.
+            خدمات متكاملة تحت سقف واحد: عناية ملكية بالسجاد والمفروشات + مغسلة سيارات احترافية متنقلة تصلك لباب بيتك أو في مقر المغسلة.
           </p>
 
-          {/* Call to Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          {/* DUAL SERVICE CHOICE CARDS (سجاد vs عربيات) */}
+          <div id="service-selection-cards" className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto pt-4 scroll-mt-24">
+            
+            {/* 1. Carpets Card */}
             <button
               onClick={onStartBooking}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all duration-300 flex items-center justify-center gap-3 transform hover:-translate-y-0.5 cursor-pointer"
+              className="p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-cyan-950/60 border border-cyan-500/40 hover:border-cyan-400 text-right group transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(6,182,212,0.3)] hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
             >
-              <span>احسب التكلفة واطلب الخدمة</span>
-              <ArrowLeft className="w-5 h-5" />
+              <div className="space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-black text-white font-['Alexandria',sans-serif] group-hover:text-cyan-300 transition-colors">
+                  🧺 غسيل سجاد ومفروشات
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  حاسبة أسعار فورية للسجاد، المشايات، الكنب، البطاطين مع تعقيم بالبخار 120°C واستلام منزلي.
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-cyan-400">
+                <span>احسب التكلفة واطلب الآن</span>
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              </div>
             </button>
 
+            {/* 2. Cars Card */}
+            <button
+              onClick={onStartCarBooking || onStartBooking}
+              className="p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-purple-950/60 border border-purple-500/40 hover:border-purple-400 text-right group transition-all duration-300 shadow-lg hover:shadow-[0_0_25px_rgba(168,85,247,0.3)] hover:-translate-y-1 cursor-pointer flex flex-col justify-between"
+            >
+              <div className="space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+                  <Car className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-black text-white font-['Alexandria',sans-serif] group-hover:text-purple-300 transition-colors">
+                  🚗 غسيل وخدمات سيارات
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  اختار نوع وموديل عربيتك، وحدد الخدمات: غسيل برة، جوة، شنطة، شاسيه تحت العربية، وتغيير زيت.
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-purple-400">
+                <span>اختار عربيتك والخدمات</span>
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              </div>
+            </button>
+
+          </div>
+
+          {/* Quick Track order button */}
+          <div className="pt-2">
             <button
               onClick={onTrackOrder}
-              className="w-full sm:w-auto px-7 py-4 rounded-xl text-base font-bold text-slate-200 bg-slate-900/80 border border-slate-700/80 hover:border-cyan-400/50 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
+              className="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-300 hover:text-white bg-slate-900/80 border border-slate-800 hover:border-cyan-400/40 transition-all inline-flex items-center gap-2 cursor-pointer"
             >
-              <Search className="w-5 h-5 text-cyan-400" />
-              <span>تتبع حالة طلبك برقم الطلب البسيط (#)</span>
+              <Search className="w-4 h-4 text-cyan-400" />
+              <span>تتبع حالة طلبك السابقة برقم الطلب البسيط (#1, #2)</span>
             </button>
           </div>
 

@@ -97,6 +97,36 @@
       },
       "required": ["id", "name", "price", "unit"]
     },
+    "SiteFeature": {
+      "title": "SiteFeature",
+      "description": "Quality feature or guarantee displayed on customer landing page.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "icon": { "type": "string", "maxLength": 50 },
+        "color": { "type": "string", "maxLength": 30 },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "title", "description"]
+    },
+    "PromoMedia": {
+      "title": "PromoMedia",
+      "description": "Promotional media items (images or videos) displayed on customer pages and slider.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["image", "video"] },
+        "url": { "type": "string", "maxLength": 850000 },
+        "title": { "type": "string", "maxLength": 150 },
+        "subtitle": { "type": "string", "maxLength": 250 },
+        "linkUrl": { "type": "string", "maxLength": 1000 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "url", "active"]
+    },
     "Settings": {
       "title": "Settings",
       "description": "Global operational settings, WhatsApp number, and delivery fee.",
@@ -123,6 +153,18 @@
         "$ref": "#/entities/Service"
       },
       "description": "Dynamic laundry products and services."
+    },
+    "/features/{featureId}": {
+      "schema": {
+        "$ref": "#/entities/SiteFeature"
+      },
+      "description": "Dynamic quality features and guarantees."
+    },
+    "/promo_media/{mediaId}": {
+      "schema": {
+        "$ref": "#/entities/PromoMedia"
+      },
+      "description": "Promotional media items (photos and videos) for advertising and gallery."
     },
     "/settings/{settingId}": {
       "schema": {

@@ -27,6 +27,21 @@ service cloud.firestore {
         && data.status in ['received', 'washing', 'ready', 'delivered', 'cancelled'];
     }
 
+    function isValidPromoMedia(data) {
+      return data.keys().hasAll(['id', 'type', 'url', 'active'])
+        && data.id is string && data.id.size() <= 128
+        && data.type in ['image', 'video']
+        && data.url is string && data.url.size() <= 850000
+        && data.active is bool;
+    }
+
+    function isValidFeature(data) {
+      return data.keys().hasAll(['id', 'title', 'description'])
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 150
+        && data.description is string && data.description.size() <= 500;
+    }
+
     match /bookings/{bookingId} {
       allow get: if isValidId(bookingId);
       allow list: if true;
@@ -39,6 +54,22 @@ service cloud.firestore {
       allow get: if isValidId(serviceId);
       allow list: if true;
       allow write: if isValidId(serviceId);
+    }
+
+    match /features/{featureId} {
+      allow get: if isValidId(featureId);
+      allow list: if true;
+      allow create: if isValidId(featureId) && isValidFeature(incoming());
+      allow update: if isValidId(featureId);
+      allow delete: if isValidId(featureId);
+    }
+
+    match /promo_media/{mediaId} {
+      allow get: if isValidId(mediaId);
+      allow list: if true;
+      allow create: if isValidId(mediaId) && isValidPromoMedia(incoming());
+      allow update: if isValidId(mediaId);
+      allow delete: if isValidId(mediaId);
     }
 
     match /settings/{settingId} {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   User,
@@ -32,6 +32,17 @@ export const ClientProfileDrawer: React.FC<ClientProfileDrawerProps> = ({
   const [savingNote, setSavingNote] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!client) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [client, onClose]);
+
   if (!client) return null;
 
   const handleSaveNotes = async () => {
@@ -62,7 +73,12 @@ export const ClientProfileDrawer: React.FC<ClientProfileDrawerProps> = ({
   const tier = getTierBadge();
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div className="relative w-full max-w-xl h-full bg-[#0A0F1D] border-r border-cyan-500/30 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto shadow-2xl">
         
         {/* Header */}

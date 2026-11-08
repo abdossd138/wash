@@ -183,7 +183,10 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({
               تأكد من إدخال رقم الطلب الصحيح (مثال: 14) أو نفس رقم الهاتف المستخدم أثناء الحجز.
             </p>
             <a
-              href={`https://wa.me/${settings.businessPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`مرحباً، أبحث عن حالة طلبي ولم أجده برقم: ${searchTerm}`)}`}
+              href={getWhatsAppUrl(
+                settings.businessPhone,
+                `مرحباً، أبحث عن حالة طلبي ولم أجده برقم: ${searchTerm}`
+              )}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all mt-2"

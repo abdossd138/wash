@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Plus,
@@ -16,6 +16,7 @@ import {
   Building,
   KeyRound,
   AlertCircle,
+  Undo2,
 } from 'lucide-react';
 import { DynamicService, AppSettings } from '../types';
 import {
@@ -42,8 +43,12 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'services' | 'settings'>('services');
 
+  // Category filter: 'all' | 'carpets' | 'cars'
+  const [serviceFilter, setServiceFilter] = useState<'all' | 'carpets' | 'cars'>('all');
+
   // New Service form state
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newCategory, setNewCategory] = useState<'carpets' | 'cars'>('carpets');
   const [newName, setNewName] = useState('');
   const [newSubname, setNewSubname] = useState('');
   const [newUnit, setNewUnit] = useState('قطعة');
@@ -53,6 +58,7 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
 
   // Edit Service state
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [editCategory, setEditCategory] = useState<'carpets' | 'cars'>('carpets');
   const [editName, setEditName] = useState('');
   const [editSubname, setEditSubname] = useState('');
   const [editUnit, setEditUnit] = useState('');
@@ -63,12 +69,32 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
   // General Settings state
   const [brandName, setBrandName] = useState(settings.brandName || 'CleanPro Express');
   const [brandTagline, setBrandTagline] = useState(settings.brandTagline || 'مغسلة السجاد والمفروشات الفاخرة بالبخار والأوزون');
+  const [announcementText, setAnnouncementText] = useState(settings.announcementText || '🚚 خدمة الاستلام والتوصيل المنزلي السريع متاحة في جميع أنحاء القاهرة الجديدة والتجمع!');
+  const [announcementActive, setAnnouncementActive] = useState(settings.announcementActive || false);
   const [businessPhone, setBusinessPhone] = useState(settings.businessPhone || '');
   const [deliveryFee, setDeliveryFee] = useState(settings.deliveryFee || 0);
   const [shopBranchAddress, setShopBranchAddress] = useState(settings.shopBranchAddress || '');
   const [adminPasscode, setAdminPasscode] = useState(settings.adminPasscode || '2255');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (editingServiceId) {
+          setEditingServiceId(null);
+        } else if (isAddingNew) {
+          setIsAddingNew(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, editingServiceId, isAddingNew, onClose]);
 
   if (!isOpen) return null;
 
@@ -82,10 +108,11 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
       await createServiceInFirestore({
         name: newName.trim(),
         subname: newSubname.trim(),
-        unit: newUnit.trim() || 'قطعة',
+        unit: newUnit.trim() || (newCategory === 'cars' ? 'سيارة' : 'قطعة'),
         price: Number(newPrice) || 0,
         description: newDescription.trim(),
-        icon: 'Sparkles',
+        category: newCategory,
+        icon: newCategory === 'cars' ? 'Car' : 'Sparkles',
       });
 
       // Reset
@@ -105,6 +132,7 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
   // Start editing a service
   const startEdit = (srv: DynamicService) => {
     setEditingServiceId(srv.id);
+    setEditCategory(srv.category || (srv.id.startsWith('car-') ? 'cars' : 'carpets'));
     setEditName(srv.name);
     setEditSubname(srv.subname || '');
     setEditUnit(srv.unit);
@@ -124,6 +152,7 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
         unit: editUnit.trim() || 'قطعة',
         price: Number(editPrice) || 0,
         description: editDescription.trim(),
+        category: editCategory,
       });
       setEditingServiceId(null);
     } catch (err) {
@@ -156,6 +185,8 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
         ...settings,
         brandName: brandName.trim() || 'CleanPro Express',
         brandTagline: brandTagline.trim() || 'مغسلة السجاد والمفروشات الفاخرة بالبخار والأوزون',
+        announcementText: announcementText.trim(),
+        announcementActive: Boolean(announcementActive),
         businessPhone: businessPhone.trim(),
         deliveryFee: Number(deliveryFee) || 0,
         shopBranchAddress: shopBranchAddress.trim(),
@@ -175,30 +206,40 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
+    >
       <div className="relative w-full max-w-3xl rounded-3xl glass-panel-cyan p-6 sm:p-8 my-8 shadow-2xl border border-cyan-500/40">
         
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 left-5 text-slate-400 hover:text-white p-2 rounded-full bg-slate-900 border border-slate-700 cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Modal Header with High-Visibility Exit Button */}
+        <div className="mb-6 pb-4 border-b border-slate-800 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center text-cyan-400">
+              <Package className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-white font-['Alexandria',sans-serif]">
+                إدارة المنتجات والخدمات وإعدادات التوصيل
+              </h3>
+              <p className="text-xs text-slate-400">
+                إضافة وتعديل وحذف خدمات الغسيل فورياً، وتحديد رسوم التوصيل ورقم الواتساب.
+              </p>
+            </div>
+          </div>
 
-        {/* Modal Header */}
-        <div className="mb-6 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center text-cyan-400">
-            <Package className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-white font-['Alexandria',sans-serif]">
-              إدارة المنتجات والخدمات وإعدادات التوصيل
-            </h3>
-            <p className="text-xs text-slate-400">
-              إضافة وتعديل وحذف خدمات الغسيل فورياً، وتحديد رسوم التوصيل ورقم الواتساب.
-            </p>
-          </div>
+          {/* Prominent High-Visibility Exit Button (X) */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 shrink-0"
+            title="إغلاق وخروج (ESC)"
+          >
+            <X className="w-4 h-4 text-rose-400" />
+            <span>خروج (ESC)</span>
+          </button>
         </div>
 
         {/* Tabs */}
@@ -234,22 +275,61 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
         {activeTab === 'services' && (
           <div className="space-y-5">
             
-            {/* Top Action to Add New Service */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-300">
-                الخدمات المعروضة في حاسبة العميل:
-              </span>
+            {/* Top Action to Add New Service & Category Filter */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-300">
+                  الخدمات المعروضة في حاسبة العميل:
+                </span>
 
-              {!isAddingNew && (
+                {!isAddingNew && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingNew(true)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ إضافة خدمة جديدة</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Category Filter Pills for Admin */}
+              <div className="flex items-center gap-2 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddingNew(true)}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                  onClick={() => setServiceFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    serviceFilter === 'all'
+                      ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ إضافة خدمة جديدة</span>
+                  الكل ({services.length})
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setServiceFilter('carpets')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    serviceFilter === 'carpets'
+                      ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🧺 سجاد ومفروشات ({services.filter((s) => s.category !== 'cars' && !s.id.startsWith('car-') && s.unit !== 'سيارة').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServiceFilter('cars')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    serviceFilter === 'cars'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🚗 غسيل سيارات ({services.filter((s) => s.category === 'cars' || s.id.startsWith('car-') || s.unit === 'سيارة').length})
+                </button>
+              </div>
             </div>
 
             {/* Add New Service Form Drawer */}
@@ -267,6 +347,43 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
                   >
                     إلغاء
                   </button>
+                </div>
+
+                {/* Category Selection for New Service */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    قسم ونوع الخدمة <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewCategory('carpets');
+                        if (newUnit === 'سيارة') setNewUnit('قطعة');
+                      }}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                        newCategory === 'carpets'
+                          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      🧺 سجاد ومفروشات
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewCategory('cars');
+                        setNewUnit('سيارة');
+                      }}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                        newCategory === 'cars'
+                          ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      🚗 غسيل وتفصيل سيارات
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -365,7 +482,17 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
 
             {/* List of Current Services */}
             <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-              {services.map((srv) => {
+              {services
+                .filter((srv) => {
+                  if (serviceFilter === 'carpets') {
+                    return srv.category !== 'cars' && !srv.id.startsWith('car-') && srv.unit !== 'سيارة';
+                  }
+                  if (serviceFilter === 'cars') {
+                    return srv.category === 'cars' || srv.id.startsWith('car-') || srv.unit === 'سيارة';
+                  }
+                  return true;
+                })
+                .map((srv) => {
                 const isEditing = editingServiceId === srv.id;
 
                 if (isEditing) {
@@ -412,27 +539,31 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
                         />
                       </div>
 
-                      <div className="flex justify-end gap-2 pt-1">
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/80">
                         <button
                           type="button"
                           onClick={() => setEditingServiceId(null)}
-                          className="px-3 py-1 rounded-lg text-xs text-slate-400 hover:text-white"
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-rose-300 bg-rose-500/15 border border-rose-500/30 hover:bg-rose-500/25 flex items-center gap-1.5 cursor-pointer transition-all"
+                          title="إلغاء التعديل والتراجع فوراً"
                         >
-                          إلغاء
+                          <X className="w-3.5 h-3.5 text-rose-400" />
+                          <span>إلغاء التعديل (تراجع)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleSaveEdit(srv.id)}
                           disabled={isSavingEdit}
-                          className="px-3 py-1 rounded-lg text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 flex items-center gap-1"
+                          className="px-4 py-1.5 rounded-xl text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 flex items-center gap-1.5 cursor-pointer shadow-md"
                         >
                           {isSavingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                          <span>تحديث</span>
+                          <span>حفظ التعديلات</span>
                         </button>
                       </div>
                     </div>
                   );
                 }
+
+                const isCar = srv.category === 'cars' || srv.id.startsWith('car-') || srv.unit === 'سيارة';
 
                 return (
                   <div
@@ -444,6 +575,15 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
                         <span className="text-xs font-bold text-white">{srv.name}</span>
                         {srv.subname && (
                           <span className="text-[10px] text-cyan-400/80">({srv.subname})</span>
+                        )}
+                        {isCar ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                            🚗 سيارات
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
+                            🧺 سجاد
+                          </span>
                         )}
                       </div>
                       <span className="text-[11px] text-slate-400 block mt-0.5">
@@ -473,6 +613,21 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
                   </div>
                 );
               })}
+            </div>
+
+            {/* Bottom Close Bar for Tab 1 */}
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-xs text-slate-500">
+                أي تعديلات يتم حفظها تظهر فوراً لجميع العملاء عبر السحابة.
+              </span>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+                <span>إغلاق وخروج</span>
+              </button>
             </div>
 
           </div>
@@ -596,6 +751,38 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
               </span>
             </div>
 
+            {/* Announcement Alert Banner for Customer Page */}
+            <div className="p-4 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-bold text-white">
+                    شريط التنبيهات والإعلانات العاجلة للزبائن (Top Announcement Bar)
+                  </span>
+                </div>
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer">
+                  <span>تفعيل في أعلى الموقع</span>
+                  <input
+                    type="checkbox"
+                    checked={announcementActive}
+                    onChange={(e) => setAnnouncementActive(e.target.checked)}
+                    className="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-400 bg-slate-900 border-slate-700 cursor-pointer"
+                  />
+                </label>
+              </div>
+
+              <input
+                type="text"
+                value={announcementText}
+                onChange={(e) => setAnnouncementText(e.target.value)}
+                placeholder="اكتب التنبيه أو العرض العاجل الذي يظهر أعلى صفحة الزبائن..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+              />
+              <span className="text-[10px] text-slate-400 block">
+                عند التفعيل، يظهر شريط عريض مشرق في أعلى صفحة الزبائن لتنبيههم بالعروض أو أوقات العمل.
+              </span>
+            </div>
+
             {/* Admin Passcode */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1.5">
@@ -613,7 +800,16 @@ export const ServicesManagerModal: React.FC<ServicesManagerModalProps> = ({
               <span className="text-[10px] text-slate-500">مؤمن بنظام تشفير محمي للإدارة فقط.</span>
             </div>
 
-            <div className="pt-4 border-t border-slate-800 flex justify-end">
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+                <span>إلغاء وخروج</span>
+              </button>
+
               <button
                 type="submit"
                 disabled={isSavingSettings}

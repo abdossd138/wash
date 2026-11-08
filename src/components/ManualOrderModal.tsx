@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Plus,
@@ -12,6 +12,7 @@ import {
   Loader2,
   Truck,
   Store,
+  ArrowRight,
 } from 'lucide-react';
 import { DynamicService, AppSettings, DeliveryType } from '../types';
 import { TIME_SLOTS } from '../constants';
@@ -46,6 +47,18 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({
   const [items, setItems] = useState<Record<string, number>>({});
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Close on Escape key press
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -116,28 +129,38 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
+    >
       <div className="relative w-full max-w-2xl rounded-3xl glass-panel-cyan p-6 sm:p-8 my-8 shadow-2xl border border-cyan-500/40">
         
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 left-5 text-slate-400 hover:text-white p-2 rounded-full bg-slate-900 border border-slate-700 cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Top Header Row with Clear Prominent Close/Exit Button */}
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+          <div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              تسجيل يدوي (هاتف / استلام مباشر)
+            </span>
+            <h3 className="text-xl font-black text-white font-['Alexandria',sans-serif] mt-1">
+              إضافة طلب جديد يدوياً في النظام
+            </h3>
+            <p className="text-xs text-slate-400">
+              أو اضغط زر الخروج (✕) في أي وقت للتراجع والعودة للوحة التحكم
+            </p>
+          </div>
 
-        {/* Modal Header */}
-        <div className="mb-6">
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-            تسجيل يدوي (هاتف / استلام مباشر)
-          </span>
-          <h3 className="text-xl font-black text-white font-['Alexandria',sans-serif] mt-1">
-            إضافة طلب جديد يدوياً في النظام
-          </h3>
-          <p className="text-xs text-slate-400">
-            سيتم إصدار رقم طلب تسلسلي فوري (#) وحفظه في Firestore.
-          </p>
+          {/* Prominent High-Visibility Exit Button (X) */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+            title="إلغاء وخروج (ESC)"
+          >
+            <X className="w-4 h-4 text-rose-400" />
+            <span>خروج (إلغاء)</span>
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -295,8 +318,8 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({
             </div>
           </div>
 
-          {/* Total & Submit */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+          {/* Total & Submit / Cancel Actions */}
+          <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <span className="text-xs text-slate-400 block">الإجمالي (شامل التوصيل):</span>
               <span className="text-xl font-black text-cyan-400 font-['Alexandria',sans-serif]">
@@ -304,23 +327,34 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({
               </span>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || totalPrice === 0}
-              className="px-6 py-3 rounded-xl text-xs sm:text-sm font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-2 transition-all cursor-pointer disabled:bg-slate-800 disabled:text-slate-500 shadow-md"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>جاري التسجيل...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  <span>حفظ الطلب فوراً</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-3 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+                <span>إلغاء وتراجع</span>
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || totalPrice === 0}
+                className="px-6 py-3 rounded-xl text-xs sm:text-sm font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-2 transition-all cursor-pointer disabled:bg-slate-800 disabled:text-slate-500 shadow-md"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>جاري التسجيل...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>حفظ الطلب فوراً</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
 

@@ -40,7 +40,7 @@ export const BookingReceiptModal: React.FC<BookingReceiptModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const whatsappMessage = buildWhatsAppMessage(booking, settings.businessPhone, services);
+  const whatsappMessage = buildWhatsAppMessage(booking, settings.businessPhone, services, settings.brandName);
   const whatsappUrl = getWhatsAppUrl(settings.businessPhone, whatsappMessage);
 
   const handlePrint = () => {
@@ -112,10 +112,19 @@ export const BookingReceiptModal: React.FC<BookingReceiptModalProps> = ({
               <span className="font-bold text-white text-sm">{booking.customerName}</span>
             </div>
             <div>
-              <span className="text-slate-500 block mb-0.5">رقم الهاتف:</span>
+              <span className="text-slate-500 block mb-0.5">رقم الهاتف (المشتري):</span>
               <span className="font-bold text-white font-mono text-sm">{booking.phone}</span>
             </div>
           </div>
+
+          {booking.carDetails && (
+            <div className="pb-3 border-b border-slate-800">
+              <span className="text-slate-500 block mb-0.5">بيانات السيارة:</span>
+              <span className="font-bold text-purple-300 text-sm">
+                🚗 {booking.carDetails.brand} - {booking.carDetails.model}
+              </span>
+            </div>
+          )}
 
           <div className="pb-3 border-b border-slate-800">
             <span className="text-slate-500 block mb-0.5">طريقة الاستلام:</span>

@@ -1,10 +1,12 @@
 import React from 'react';
-import { Sparkles, Phone, ShieldCheck, Lock, Search, Calculator, Menu } from 'lucide-react';
+import { Sparkles, Phone, ShieldCheck, Lock, Search, Calculator, Menu, Image as ImageIcon, Car } from 'lucide-react';
 import { AppSettings } from '../types';
+import { normalizeWhatsAppPhone } from '../services/bookingService';
 
 interface NavbarProps {
   settings: AppSettings;
   activeSection: string;
+  hasMedia?: boolean;
   onNavigate: (section: string) => void;
   onOpenAdminModal: () => void;
   isAdminLoggedIn: boolean;
@@ -15,6 +17,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   settings,
   activeSection,
+  hasMedia = false,
   onNavigate,
   onOpenAdminModal,
   isAdminLoggedIn,
@@ -40,27 +43,39 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {settings.brandName || 'CleanPro Express'}
               </span>
               <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 uppercase tracking-widest">
-                Lux Laundry
+                سجاد & سيارات
               </span>
             </div>
             <p className="text-xs text-slate-400 hidden sm:block">
-              {settings.brandTagline || 'مغسلة السجاد والمفروشات الفاخرة بالبخار والأوزون'}
+              {settings.brandTagline || 'مغسلة السجاد والمفروشات الفاخرة & غسيل السيارات بالبخار'}
             </p>
           </div>
         </div>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 sm:gap-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800">
+        <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800">
           <button
             onClick={() => onNavigate('calculator')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSection === 'calculator'
-                ? 'bg-cyan-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
           >
-            <Calculator className="w-4 h-4" />
-            حاسبة الأسعار والطلب
+            <Calculator className="w-3.5 h-3.5" />
+            <span>سجاد ومفروشات</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('cars')}
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeSection === 'cars'
+                ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]'
+                : 'text-purple-300 hover:text-white hover:bg-purple-950/40'
+            }`}
+          >
+            <Car className="w-3.5 h-3.5" />
+            <span>غسيل سيارات</span>
           </button>
 
           <button
@@ -74,6 +89,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Search className="w-4 h-4" />
             تتبع طلبك (#)
           </button>
+
+          {hasMedia && (
+            <button
+              onClick={() => onNavigate('media')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+                activeSection === 'media'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4 text-cyan-400" />
+              صور وفيديوهات
+            </button>
+          )}
 
           <button
             onClick={() => onNavigate('features')}
@@ -93,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           {/* Direct WhatsApp Callout */}
           <a
-            href={`https://wa.me/${settings.businessPhone.replace(/\D/g, '')}?text=${encodeURIComponent('مرحباً CleanPro Express، أود الاستفسار عن خدمات غسيل السجاد والمفروشات')}`}
+            href={`https://wa.me/${normalizeWhatsAppPhone(settings.businessPhone)}?text=${encodeURIComponent('مرحباً CleanPro Express، أود الاستفسار عن خدمات غسيل السجاد والمفروشات')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-400 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)]"

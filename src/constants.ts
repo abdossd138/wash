@@ -1,6 +1,7 @@
-import { DynamicService, StatusMeta, OrderStatus, AppSettings } from './types';
+import { DynamicService, StatusMeta, OrderStatus, AppSettings, SiteFeature } from './types';
 
 export const DEFAULT_SERVICES: DynamicService[] = [
+  // 1. CARPETS & HOME FURNISHINGS
   {
     id: 'large-carpets',
     name: 'سجاد صالون فاخر (كبير)',
@@ -9,6 +10,7 @@ export const DEFAULT_SERVICES: DynamicService[] = [
     unit: 'قطعة',
     price: 180,
     icon: 'Sparkles',
+    category: 'carpets',
   },
   {
     id: 'runners',
@@ -18,6 +20,7 @@ export const DEFAULT_SERVICES: DynamicService[] = [
     unit: 'قطعة',
     price: 95,
     icon: 'Layers',
+    category: 'carpets',
   },
   {
     id: 'sofas',
@@ -27,6 +30,7 @@ export const DEFAULT_SERVICES: DynamicService[] = [
     unit: 'مقعد/قطعة',
     price: 120,
     icon: 'Armchair',
+    category: 'carpets',
   },
   {
     id: 'blankets',
@@ -36,6 +40,7 @@ export const DEFAULT_SERVICES: DynamicService[] = [
     unit: 'قطعة',
     price: 140,
     icon: 'CloudRain',
+    category: 'carpets',
   },
   {
     id: 'dry-cleaning',
@@ -45,19 +50,130 @@ export const DEFAULT_SERVICES: DynamicService[] = [
     unit: 'قطعة',
     price: 210,
     icon: 'ShieldCheck',
+    category: 'carpets',
   },
   {
     id: 'steam-sanitation',
-    name: 'تعقيم نانو بخار وأوزون',
+    name: 'تعقيم نانو بخار وأوزون للمفروشات',
     subname: 'قتل 99.9% من البكتيريا وحشرات الفراش',
     description: 'تطبيق بخار جاف تحت ضغط عالي 120°C مع معالجة بالأوزون المضاد للحساسية.',
     unit: 'خدمة إضافية',
     price: 110,
     icon: 'Flame',
+    category: 'carpets',
+  },
+
+  // 2. CARS & DETAILING (خدمات ومغسلة السيارات)
+  {
+    id: 'car-exterior-wash',
+    name: 'غسيل خارجي بالرغوة النشطة والواكس السريع',
+    subname: 'غسيل برة بجهاز ضغط عالي وشامبو حماية للدهان',
+    description: 'إزالة الأتربة والطين والشحوم بالرغوة الثلجية الفعالة وتطبيق طبقة واكس واقية تمنح لمعاناً فائقاً.',
+    unit: 'سيارة',
+    price: 70,
+    icon: 'Sparkles',
+    category: 'cars',
+  },
+  {
+    id: 'car-interior-steam',
+    name: 'غسيل وصالون داخلي عميق بالبخار',
+    subname: 'غسيل جوة (فرش، دواسات، كونسول، طبلون، وسقف)',
+    description: 'تنظيف الكراسي القماش أو الجلد والفرش بالكامل بماكينة حقن وشفط بالبخار 120°C لقتل الجراثيم وتجديد الصالون.',
+    unit: 'سيارة',
+    price: 140,
+    icon: 'Armchair',
+    category: 'cars',
+  },
+  {
+    id: 'car-trunk-clean',
+    name: 'تنظيف وتعقيم الشنطة بالكامل',
+    subname: 'شنطة العربية الخلفية وحوض الاستبن بالبخار',
+    description: 'شفط عميق لبطانة الشنطة الخلفية، إزالة بقع الزيوت والسوائل وتعقيم حيز الإطار الاحتياطي.',
+    unit: 'سيارة',
+    price: 50,
+    icon: 'Layers',
+    category: 'cars',
+  },
+  {
+    id: 'car-undercarriage-engine',
+    name: 'غسيل شاسيه سفلي ومحرك تحت العربية',
+    subname: 'تنظيف شاسيه تحت العربية وحوض الموتور بالبخار الجاف',
+    description: 'غسيل هيدروليكي للشاسيه من الأسفل لإزالة الطين والأملاح، مع تنظيف دقيق لحوض المحرك ببخار جاف آمن على الحساسات.',
+    unit: 'سيارة',
+    price: 110,
+    icon: 'Flame',
+    category: 'cars',
+  },
+  {
+    id: 'car-oil-change',
+    name: 'خدمة تغيير زيت وفلتر المحرك',
+    subname: 'استبدال الزيت والفلتر مع فحص 12 نقطة للسوائل',
+    description: 'تفريغ وتعبئة زيت الموتور، تركيب فلتر أصلي وفحص زيت الفرامل، سائل التبريد، وسيور الماكينة.',
+    unit: 'سيارة',
+    price: 80,
+    icon: 'Droplets',
+    category: 'cars',
+  },
+  {
+    id: 'car-ozone-ac',
+    name: 'تعقيم مكيف السيارة بالأوزون الطبي',
+    subname: 'إبادة روائح التدخين والعفن وبكتيريا دورة التكييف',
+    description: 'ضخ غاز الأوزون النقي داخل كابينة ومسالك تكييف السيارة للقضاء على البكتيريا والفطريات المسببة للروائح الكريهة.',
+    unit: 'سيارة',
+    price: 75,
+    icon: 'Wind',
+    category: 'cars',
+  },
+  {
+    id: 'car-headlight-polish',
+    name: 'تلميع وبولش فوانيس السيارة وإزالة الاصفرار',
+    subname: 'صنفرة مائية وتلميع معجون ألماني نانو',
+    description: 'استعادة شفافية الفوانيس الأمامية والخلفية وإزالة التغبيش والاصفرار لتحسين مدى الرؤية الليلية.',
+    unit: 'طقم فوانيس',
+    price: 90,
+    icon: 'ShieldCheck',
+    category: 'cars',
+  },
+  {
+    id: 'car-nano-ceramic',
+    name: 'طبقة حماية نانو سيراميك وتلميع بودي',
+    subname: 'تلميع متعدد المراحل وحماية نانو 9H',
+    description: 'معالجة خدوش الصاج الخفيفة وعمل بولش احترافي مع تطبيق طبقة نانو سيراميك عازلة للماء والأتربة وأشعة الشمس.',
+    unit: 'سيارة',
+    price: 380,
+    icon: 'ShieldCheck',
+    category: 'cars',
   },
 ];
 
 export const SERVICE_ITEMS = DEFAULT_SERVICES;
+
+export const DEFAULT_FEATURES: SiteFeature[] = [
+  {
+    id: 'feat-brushes',
+    title: 'غسيل آلي بالفرش الدوارة المتوازنة',
+    description: 'ماكينات هيدروليكية ذات فرش ناعمة ذات حركة دائرية متعاكسة تنفذ إلى أعماق النسيج دون أن تجرح وبرة الصوف أو تقطع الخيوط الحساسة.',
+    icon: 'Droplets',
+    color: 'cyan',
+    active: true,
+  },
+  {
+    id: 'feat-centrifuge',
+    title: 'طرد مركزي فائق وتجفيف حراري',
+    description: 'حوض طرد مركزي يدور بسرعة 1400 لفة بالدقيقة لعصر 95% من المياه في ثوانٍ، يتبعه غرف تجفيف معقمة بدون تعريض السجاد لأشعة الشمس الحارقة أو الأتربة.',
+    icon: 'Wind',
+    color: 'purple',
+    active: true,
+  },
+  {
+    id: 'feat-steam',
+    title: 'تعقيم بالبخار الجاف 120°C والأوزون',
+    description: 'إبادة فورية للميكروبات، عثة الفراش، وحبوب اللقاح المسببة للحساسية والربو باستخدام بخار عالي الحرارة بدون تبليل النسيج.',
+    icon: 'Flame',
+    color: 'rose',
+    active: true,
+  },
+];
 
 export const STATUS_METADATA: Record<OrderStatus, StatusMeta> = {
   received: {
@@ -114,6 +230,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   adminPasscode: '2255', // Strictly 2255 as requested
   deliveryFee: 40, // Standard home pickup/delivery fee in EGP
   shopBranchAddress: 'فرع المغسلة الرئيسي: التجمع الخامس، شارع التسعين الشمالي، القاهرة الجديدة',
+  announcementText: '🚚 خدمة الاستلام والتوصيل المنزلي السريع متاحة في جميع أنحاء القاهرة الجديدة والتجمع!',
+  announcementActive: false,
+  isStoreLocked: false,
+  storeLockMessage: 'هذا الموقع معلّق ومغلق مؤقتاً لأسباب تتعلق بالترخيص والصيانة. يُرجى مراجعة المطور لتفعيل الخدمة وتسوية المستحقات.',
 };
 
 export const TIME_SLOTS = [

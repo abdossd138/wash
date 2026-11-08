@@ -23,6 +23,13 @@ import {
   Trash2,
   Download,
   FileSpreadsheet,
+  Copy,
+  ExternalLink,
+  Activity,
+  Lock,
+  Unlock,
+  Image as ImageIcon,
+  Smartphone,
 } from 'lucide-react';
 import {
   Booking,
@@ -30,6 +37,8 @@ import {
   AppSettings,
   CustomerCRMRecord,
   DynamicService,
+  SiteFeature,
+  PromoMediaItem,
 } from '../types';
 import { STATUS_METADATA } from '../constants';
 import {
@@ -43,24 +52,37 @@ import { ClientProfileDrawer } from './ClientProfileDrawer';
 import { ManualOrderModal } from './ManualOrderModal';
 import { ServicesManagerModal } from './ServicesManagerModal';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
+import { FeaturesManagerTab } from './FeaturesManagerTab';
+import { BackendHealthTab } from './BackendHealthTab';
+import { PromoMediaManagerTab } from './PromoMediaManagerTab';
+import { StoreLockModal } from './StoreLockModal';
 
 interface AdminDashboardProps {
   services: DynamicService[];
+  features?: SiteFeature[];
+  mediaItems?: PromoMediaItem[];
   settings: AppSettings;
   onUpdateSettings: (newSettings: AppSettings) => void;
   onLogout: () => void;
   onBackToStore: () => void;
+  onSwitchToMobile?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   services,
+  features = [],
+  mediaItems = [],
   settings,
   onUpdateSettings,
   onLogout,
   onBackToStore,
+  onSwitchToMobile,
 }) => {
+  const [activeTab, setActiveTab] = useState<'orders' | 'media' | 'features' | 'health'>('orders');
+  const [copiedUrl, setCopiedUrl] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStoreLockModalOpen, setIsStoreLockModalOpen] = useState(false);
 
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -286,6 +308,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
+      {/* Dedicated Backend URL Banner */}
+      <div className="bg-gradient-to-r from-cyan-950/90 via-slate-900 to-purple-950/90 border-b border-cyan-500/30 px-4 py-2 text-xs">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-mono px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+              /admin
+            </span>
+            <span className="text-slate-300 font-semibold">شاشة الباك إند المخصصة (Dedicated URL):</span>
+            <span className="font-mono text-cyan-400 font-bold hidden sm:inline">
+              {typeof window !== 'undefined' ? `${window.location.origin}/admin` : '/admin'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  navigator.clipboard.writeText(`${window.location.origin}/admin`);
+                  setCopiedUrl(true);
+                  setTimeout(() => setCopiedUrl(false), 2000);
+                }
+              }}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold border border-slate-700 cursor-pointer flex items-center gap-1 transition-all"
+            >
+              <Copy className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{copiedUrl ? 'تم نسخ الرابط!' : 'نسخ رابط الباك إند'}</span>
+            </button>
+            <button
+              onClick={onBackToStore}
+              className="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-[11px] font-bold border border-cyan-500/40 cursor-pointer flex items-center gap-1 transition-all"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>عرض صفحة الزبائن المباشرة</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Top Admin Header */}
       <header className="glass-panel border-b border-cyan-500/20 bg-[#0A0F1D]/90 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -361,6 +421,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="hidden sm:inline">واجهة العملاء</span>
             </button>
 
+            {onSwitchToMobile && (
+              <button
+                onClick={onSwitchToMobile}
+                className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
+                title="عرض نسخة الهاتف للمالك"
+              >
+                <Smartphone className="w-4 h-4 text-purple-400" />
+                <span className="hidden xl:inline">نسخة الموبايل</span>
+              </button>
+            )}
+
+            {/* Store Lock / Emergency Killswitch button */}
+            <button
+              onClick={() => setIsStoreLockModalOpen(true)}
+              className={`p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                settings.isStoreLocked
+                  ? 'bg-rose-600/25 hover:bg-rose-600/35 text-rose-300 border border-rose-500 shadow-[0_0_15px_rgba(225,29,72,0.3)]'
+                  : 'bg-slate-900 border border-rose-500/40 hover:border-rose-500 text-rose-300 hover:text-white'
+              }`}
+              title={settings.isStoreLocked ? 'الموقع مغلق أمام الزوار - اضغط لفك القفل' : 'إغلاق الموقع وتعليق الخدمة'}
+            >
+              {settings.isStoreLocked ? (
+                <>
+                  <Lock className="w-4 h-4 text-rose-400 animate-pulse" />
+                  <span className="font-black text-rose-200">الموقع مغلق (فك القفل)</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 text-rose-400" />
+                  <span>إغلاق الموقع</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={onLogout}
               className="p-2 rounded-xl text-slate-400 hover:text-rose-400 bg-slate-900/80 border border-slate-800 transition-colors cursor-pointer"
@@ -376,8 +470,86 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Main Admin Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         
-        {/* Financial & Operational Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {/* Navigation Tabs Bar */}
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === 'orders'
+                ? 'bg-cyan-500 text-slate-950 shadow-md font-black'
+                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            <span>الطلبات وخط الإنتاج ({bookings.length})</span>
+          </button>
+
+          <button
+            onClick={() => setIsServicesModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900/80 text-purple-300 hover:text-white border border-purple-500/30 hover:border-purple-400 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Layers className="w-4 h-4 text-purple-400" />
+            <span>المنتجات والأسعار (CMS) - ({services.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('media')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === 'media'
+                ? 'bg-cyan-500 text-slate-950 shadow-md font-black'
+                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <ImageIcon className="w-4 h-4 text-cyan-400" />
+            <span>إعلانات الصور والفيديوهات ({mediaItems.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('features')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === 'features'
+                ? 'bg-cyan-500 text-slate-950 shadow-md font-black'
+                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>مميزات وخصائص الموقع ({features.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('health')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === 'health'
+                ? 'bg-cyan-500 text-slate-950 shadow-md font-black'
+                : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>فحص السيرفر والـ API</span>
+          </button>
+        </div>
+
+        {activeTab === 'media' && (
+          <PromoMediaManagerTab mediaItems={mediaItems} />
+        )}
+
+        {activeTab === 'features' && (
+          <FeaturesManagerTab features={features} brandName={settings.brandName} />
+        )}
+
+        {activeTab === 'health' && (
+          <BackendHealthTab
+            settings={settings}
+            bookingsCount={bookings.length}
+            servicesCount={services.length}
+            featuresCount={features.length}
+          />
+        )}
+
+        {activeTab === 'orders' && (
+          <>
+            {/* Financial & Operational Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           
           <div className="p-4 sm:p-5 rounded-2xl glass-panel-cyan border-cyan-500/30 space-y-1">
             <div className="flex items-center justify-between text-slate-400">
@@ -612,6 +784,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                         {/* Items Breakdown */}
                         <td className="py-4 px-4 max-w-xs">
+                          {b.carDetails && (
+                            <div className="mb-1.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-black">
+                                🚗 {b.carDetails.brand} - {b.carDetails.model}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex flex-wrap gap-1">
                             {b.itemsDetails && b.itemsDetails.length > 0 ? (
                               b.itemsDetails.map((item, idx) => (
@@ -702,7 +881,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               href={buildStatusWhatsAppUrl(
                                 b,
                                 statusMeta.label,
-                                settings.businessPhone
+                                settings.businessPhone,
+                                settings.brandName
                               )}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -748,6 +928,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </tbody>
             </table>
           </div>
+        </div>
+        </>
+      )}
+
+        {/* Subtle Developer Signature Line */}
+        <div className="pt-4 pb-8 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs opacity-60 text-slate-400 select-none">
+          <span dir="rtl">تم تطوير الموقع بواسطة عبد الرحمن - 01554544459</span>
+          <span dir="ltr" className="font-mono text-[11px]">Developed by Abdelrahman - 01554544459</span>
         </div>
 
       </main>
@@ -817,6 +1005,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           booking={invoiceBooking}
           settings={settings}
           onClose={() => setInvoiceBooking(null)}
+        />
+      )}
+
+      {/* Emergency Store Lock / Unlock Modal */}
+      {isStoreLockModalOpen && (
+        <StoreLockModal
+          isOpen={isStoreLockModalOpen}
+          onClose={() => setIsStoreLockModalOpen(false)}
+          isCurrentlyLocked={Boolean(settings.isStoreLocked)}
+          currentMessage={settings.storeLockMessage}
         />
       )}
 

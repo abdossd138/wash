@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Printer, Tag, FileText, Truck, Store } from 'lucide-react';
 import { Booking, AppSettings } from '../types';
 import { STATUS_METADATA } from '../constants';
@@ -16,6 +16,17 @@ export const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({
 }) => {
   const [printFormat, setPrintFormat] = useState<'invoice' | 'bundleTag'>('bundleTag');
 
+  useEffect(() => {
+    if (!booking) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [booking, onClose]);
+
   if (!booking) return null;
 
   const handlePrint = () => {
@@ -28,7 +39,12 @@ export const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({
       : 'تسليم بالفرع بنفسي';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
+    >
       <div className="relative w-full max-w-2xl bg-white text-slate-900 rounded-3xl p-6 sm:p-8 my-8 shadow-2xl print:m-0 print:p-0 print:shadow-none print:w-full">
         
         {/* Controls bar (hidden during print) */}

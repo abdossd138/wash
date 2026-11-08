@@ -1,12 +1,14 @@
 import React from 'react';
-import { Sparkles, Phone, MapPin, Clock, ShieldCheck, Lock } from 'lucide-react';
+import { Sparkles, Phone, MapPin, Clock, ShieldCheck, Lock, Smartphone } from 'lucide-react';
 import { AppSettings } from '../types';
+import { normalizeWhatsAppPhone } from '../services/bookingService';
 
 interface FooterProps {
   settings: AppSettings;
   onOpenAdminModal: () => void;
   isAdminLoggedIn: boolean;
   onOpenAdminDashboard: () => void;
+  onSwitchToMobile?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -14,6 +16,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenAdminModal,
   isAdminLoggedIn,
   onOpenAdminDashboard,
+  onSwitchToMobile,
 }) => {
   return (
     <footer className="glass-panel border-t border-slate-800 bg-[#070B14] pt-14 pb-8 text-slate-400 text-xs">
@@ -71,7 +74,7 @@ export const Footer: React.FC<FooterProps> = ({
               لأي استفسار طارئ أو تغيير موعد التسليم:
             </p>
             <a
-              href={`https://wa.me/${settings.businessPhone.replace(/\D/g, '')}`}
+              href={`https://wa.me/${normalizeWhatsAppPhone(settings.businessPhone)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#25D366]/15 text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/25 transition-all"
@@ -84,13 +87,24 @@ export const Footer: React.FC<FooterProps> = ({
 
         {/* Bottom Bar with Discreet Admin Access */}
         <div className="pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-          <p>© {new Date().getFullYear()} CleanPro Express. جميع الحقوق محفوظة لمالك المغسلة (عبدالرحمن).</p>
+          <p>© {new Date().getFullYear()} {settings.brandName || 'CleanPro Express'}. جميع الحقوق محفوظة.</p>
 
           <div className="flex items-center gap-4">
+            {onSwitchToMobile && (
+              <button
+                onClick={onSwitchToMobile}
+                className="text-slate-500 hover:text-cyan-400 flex items-center gap-1 transition-colors cursor-pointer"
+                title="التبديل إلى نسخة الهاتف"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>عرض نسخة الهاتف</span>
+              </button>
+            )}
+
             {isAdminLoggedIn ? (
               <button
                 onClick={onOpenAdminDashboard}
-                className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold"
+                className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold cursor-pointer"
               >
                 <span>الانتقال للوحة التحكم النشطة</span>
               </button>
@@ -101,10 +115,16 @@ export const Footer: React.FC<FooterProps> = ({
                 title="بوابة المالك والإدارة"
               >
                 <Lock className="w-3 h-3" />
-                <span>دخول الإدارة (Abdelrahman)</span>
+                <span>دخول الإدارة</span>
               </button>
             )}
           </div>
+        </div>
+
+        {/* Subtle Developer Signature Line */}
+        <div className="pt-3 border-t border-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs opacity-60 text-slate-400 select-none">
+          <span dir="rtl">تم تطوير الموقع بواسطة عبد الرحمن - 01554544459</span>
+          <span dir="ltr" className="font-mono text-[11px]">Developed by Abdelrahman - 01554544459</span>
         </div>
 
       </div>

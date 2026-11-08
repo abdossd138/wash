@@ -110,6 +110,7 @@ export const CustomerBookingForm: React.FC<CustomerBookingFormProps> = ({
 
       // Save to Firebase Firestore with sequential ID
       const newBooking = await createBookingInFirestore({
+        serviceCategory: 'carpets',
         customerName,
         phone,
         deliveryType,
@@ -125,7 +126,7 @@ export const CustomerBookingForm: React.FC<CustomerBookingFormProps> = ({
       });
 
       // Build structured WhatsApp message
-      const whatsappText = buildWhatsAppMessage(newBooking, settings.businessPhone, services);
+      const whatsappText = buildWhatsAppMessage(newBooking, settings.businessPhone, services, settings.brandName);
       const whatsappUrl = getWhatsAppUrl(settings.businessPhone, whatsappText);
 
       onBookingSuccess(newBooking);
